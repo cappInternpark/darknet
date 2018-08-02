@@ -243,7 +243,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 	free_network(net);
 }
 
-void train_detector_v2(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int thresh, int iter_interval)
+void train_detector_v2(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int thresh, int iter_interval, int map)
 {
     list *options = read_data_cfg(datacfg);
     char *train_images = option_find_str(options, "train", "data/train.list");
@@ -414,7 +414,7 @@ void train_detector_v2(char *datacfg, char *cfgfile, char *weightfile, int *gpus
 
 		//if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
 		//if (i % 100 == 0) {
-		if(i >= (iter_save + 1/*iter_interval*/)){
+		if(i >= (iter_save + iter_interval)){
 			iter_save = i;
 #ifdef GPU
 			if (ngpus != 1) sync_nets(nets, ngpus, 0);
@@ -424,7 +424,8 @@ void train_detector_v2(char *datacfg, char *cfgfile, char *weightfile, int *gpus
 			save_weights(net, buff);
 			
 			printf("out batch = %d\n", net.batch);
-			validate_detector_map_v3(options, net, NULL, thresh, avg_loss, 1, 1);
+			if(map)
+				validate_detector_map_v3(options, net, iter_save, thresh, avg_loss, 1, 1);
 			printf("out batch = %d\n", net.batch);
 		}
         free_data(train);
@@ -1529,7 +1530,7 @@ if(!no_img){
 	if (reinforcement_fd != NULL) fclose(reinforcement_fd);
 }
 
-void validate_detector_map_v3(list *options, network net, char *weightfile, float thresh_calc_avg_iou, float avg_loss, int excel_format, int no_img){
+void validate_detector_map_v3(list *options, network net, int iter_save, float thresh_calc_avg_iou, float avg_loss, int excel_format, int no_img){
 	#ifdef GPU
 		cuda_set_device (3);
 	#endif
@@ -1822,18 +1823,12 @@ void validate_detector_map_v3(list *options, network net, char *weightfile, floa
 		FILE* fw = fopen("map_train_excel.txt", "a");
 		fseek(fw, 0, SEEK_END);
         long size = ftell(fw);
-		int iter = -1;
-		char s1[32];
-		char *s2 = strrchr(weightfile,47);// '/'
-		memcpy(s1, s2+1, strlen(weightfile) - (s2-weightfile+1));
-		s1[strlen(weightfile) - (s2-weightfile+1)] = '\0';
 		
-		if(sscanf(weightfile, "%*[^_]_%d.weights",&iter) < 1) printf("sscanf error\n");
 		if(size == 0){
 			fprintf(fw,"iter\tavg_loss\tcur_precision\tcur_recall\tf1_score\t");
 			fprintf(fw,"TP\tFP\tFN\tavg_iou \n");
 		}
-		fprintf(fw,"%d\t%f\t",iter,avg_loss);
+		fprintf(fw,"%d\t%f\t",iter_save,avg_loss);
 		fprintf(fw,"%1.2f \t %1.2f \t %1.2f \t",cur_precision, cur_recall, f1_score);
 		fprintf(fw,"%d\t%d\t%d\t%2.2f%% \n", tp_for_thresh, fp_for_thresh, unique_truth_count - tp_for_thresh, avg_iou * 100);
 		
@@ -2194,6 +2189,7 @@ void run_detector(int argc, char **argv)
 	int dont_show = find_arg(argc, argv, "-dont_show");
 	int show = find_arg(argc, argv, "-show");
 	int excel_format = find_arg(argc, argv, "-excel_format");
+	int map = find_arg(argc, argv, "-map");
 	int iter_interval = find_int_arg(argc, argv, "-iter_interval", 1000);
 	int no_img = find_arg(argc, argv, "-no_img");
 	int http_stream_port = find_int_arg(argc, argv, "-http_port", -1);

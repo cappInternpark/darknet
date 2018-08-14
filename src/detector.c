@@ -1286,6 +1286,7 @@ void validate_detector_map_v2(char *datacfg, char *cfgfile, char *weightfile, fl
 
 						int truth_index = -1;
 						float max_iou = 0;
+						float current_box_iou = 0;
 						for (j = 0; j < num_labels; ++j)
 						{
 							// truth is ground truth 
@@ -1295,6 +1296,7 @@ void validate_detector_map_v2(char *datacfg, char *cfgfile, char *weightfile, fl
 							// iou of ground truth & 1st box
 							float current_iou = box_iou(dets[i].bbox, t);
 							if (current_iou > iou_thresh && class_id == truth[j].id) {
+								current_box_iou = current_iou;
 								if (current_iou > max_iou) {
 									max_iou = current_iou;
 									truth_index = unique_truth_count + j;
@@ -1337,7 +1339,7 @@ if(!no_img){
 	if(top < 0) top = 0;
 	if(bot > im.h-1) bot = im.h-1;
 	char class_name[32];
-	sprintf(class_name,"%d,%2.0f,%2.0f",class_id,100*prob,100*max_iou);
+	sprintf(class_name,"%d,%2.0f,%2.0f",class_id,100*prob,100*current_box_iou);
 	label = get_label_v4(alphabet, class_name, 0);
 }
 /********************************/

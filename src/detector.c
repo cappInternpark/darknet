@@ -1122,6 +1122,14 @@ void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float
 	if (reinforcement_fd != NULL) fclose(reinforcement_fd);
 }
 
+/*
+if you want to check predicted boxes(TP and FP) and ground truth, use map_v2 instead of map
+Ground_truth is red
+TP is green
+FP is blue
+
+option excel_format saves result in map_excel.txt
+*/
 void validate_detector_map_v2(char *datacfg, char *cfgfile, char *weightfile, float thresh_calc_avg_iou, int excel_format, int no_img)
 {
 #ifdef GPU
@@ -1529,6 +1537,7 @@ if(!no_img){
 	if (reinforcement_fd != NULL) fclose(reinforcement_fd);
 }
 
+//still modifying, don't use
 void validate_detector_map_v3(list *options, network net, char *weightfile, float thresh_calc_avg_iou, float avg_loss, int excel_format, int no_img){
 	#ifdef GPU
 		cuda_set_device (3);

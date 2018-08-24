@@ -243,7 +243,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 	free_network(net);
 }
 
-void train_detector_v2(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int thresh, int iter_interval)
+void train_detector_v2(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int dont_show, int thresh, int save_interval)
 {
     list *options = read_data_cfg(datacfg);
     char *train_images = option_find_str(options, "train", "data/train.list");
@@ -414,7 +414,7 @@ void train_detector_v2(char *datacfg, char *cfgfile, char *weightfile, int *gpus
 
 		//if (i % 1000 == 0 || (i < 1000 && i % 100 == 0)) {
 		//if (i % 100 == 0) {
-		if(i >= (iter_save + 1/*iter_interval*/)){
+		if(i >= (iter_save + save_interval)){
 			iter_save = i;
 #ifdef GPU
 			if (ngpus != 1) sync_nets(nets, ngpus, 0);
@@ -423,9 +423,9 @@ void train_detector_v2(char *datacfg, char *cfgfile, char *weightfile, int *gpus
 			sprintf(buff, "%s/%s_%d.weights", backup_directory, base, i);
 			save_weights(net, buff);
 			
-			printf("out batch = %d\n", net.batch);
-			validate_detector_map_v3(options, net, NULL, thresh, avg_loss, 1, 1);
-			printf("out batch = %d\n", net.batch);
+			//printf("out batch = %d\n", net.batch);
+			//validate_detector_map_v3(options, net, NULL, thresh, avg_loss, 1, 1);
+			//printf("out batch = %d\n", net.batch);
 		}
         free_data(train);
     }
@@ -767,7 +767,7 @@ int detections_comparator(const void *pa, const void *pb)
 void validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, float thresh_calc_avg_iou)
 {
 #ifdef GPU
-	cuda_set_device (3);
+	//cuda_set_device (3);
 #endif
 	int j;
 	list *options = read_data_cfg(datacfg);
@@ -1133,7 +1133,7 @@ option excel_format saves result in map_excel.txt
 void validate_detector_map_v2(char *datacfg, char *cfgfile, char *weightfile, float thresh_calc_avg_iou, int excel_format, int no_img)
 {
 #ifdef GPU
-	cuda_set_device (3);
+	//cuda_set_device (3);
 #endif
 	int j;
 	list *options = read_data_cfg(datacfg);
@@ -2067,7 +2067,7 @@ void test_detector(char *datacfg, char *cfgfile, char *weightfile, char *filenam
 				   float hier_thresh, int dont_show, int ext_output, int save_labels)
 {
 	#ifdef GPU
-		cuda_set_device (3);
+//		cuda_set_device (3);
 	#endif
 	list *options = read_data_cfg(datacfg);
     char *name_list = option_find_str(options, "names", "data/names.list");
@@ -2203,7 +2203,7 @@ void run_detector(int argc, char **argv)
 	int dont_show = find_arg(argc, argv, "-dont_show");
 	int show = find_arg(argc, argv, "-show");
 	int excel_format = find_arg(argc, argv, "-excel_format");
-	int iter_interval = find_int_arg(argc, argv, "-iter_interval", 1000);
+	int save_interval = find_int_arg(argc, argv, "-save_interval", 1000);
 	int no_img = find_arg(argc, argv, "-no_img");
 	int http_stream_port = find_int_arg(argc, argv, "-http_port", -1);
 	char *out_filename = find_char_arg(argc, argv, "-out_filename", 0);
@@ -2259,7 +2259,7 @@ void run_detector(int argc, char **argv)
     char *filename = (argc > 6) ? argv[6]: 0;
     if(0==strcmp(argv[2], "test")) test_detector(datacfg, cfg, weights, filename, thresh, hier_thresh, dont_show, ext_output, save_labels);
     else if(0==strcmp(argv[2], "train")) train_detector(datacfg, cfg, weights, gpus, ngpus, clear, dont_show);
-    else if(0==strcmp(argv[2], "train_v2")) train_detector_v2(datacfg, cfg, weights, gpus, ngpus, clear, dont_show, thresh, iter_interval);
+    else if(0==strcmp(argv[2], "train_v2")) train_detector_v2(datacfg, cfg, weights, gpus, ngpus, clear, dont_show, thresh, save_interval);
     else if(0==strcmp(argv[2], "valid")) validate_detector(datacfg, cfg, weights, outfile);
     else if(0==strcmp(argv[2], "recall")) validate_detector_recall(datacfg, cfg, weights);
 	else if(0==strcmp(argv[2], "map")) validate_detector_map(datacfg, cfg, weights, thresh);
